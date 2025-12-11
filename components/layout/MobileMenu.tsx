@@ -27,8 +27,8 @@ export default function MobileMenu() {
         <SheetHeader>
           <SheetTitle className="text-left">
             <span className="text-xl font-bold">
-              <span className="text-[#B69339]">Syed </span> 
-              <span className="text-[#B69339]">Gifts</span>
+              <span className="text-[#B69339]">Shany </span> 
+              <span className="text-[#B69339]">Fashion</span>
             </span>
           </SheetTitle>
         </SheetHeader>
