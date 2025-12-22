@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import OrderSuccessModal from './OrderSucessModal';
 
-export default function CartSummary({ totalAmount,triggerKey  }: any) {
+export default function CartSummary({ totalAmount, triggerKey }: any) {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [getCartId, setCartId] = useState<string | null>(null);
@@ -124,6 +124,7 @@ export default function CartSummary({ totalAmount,triggerKey  }: any) {
     }
   }, []);
 
+  const RazorPayKey = getVendorDeliveryDetailsData?.data?.data?.vendor_site_details?.payment_gateway_client_id;
   const handleCheckout = async () => {
     setLoading(true);
     setErrorMessage('')
@@ -140,7 +141,8 @@ export default function CartSummary({ totalAmount,triggerKey  }: any) {
           const { payment_order_id, final_price } = paymentAPi.data;
 
           const options = {
-            key: "rzp_live_RfZBG3eagq2RNX",
+            // key: "rzp_live_RfZBG3eagq2RNX",
+            key: RazorPayKey,
             amount: final_price * 100,
             currency: "INR",
             name: "Chettinad Palakaaram",
@@ -245,14 +247,14 @@ export default function CartSummary({ totalAmount,triggerKey  }: any) {
     } catch (error: any) {
       setCourierError(error?.response?.data?.error || 'Failed to fetch delivery charge. Please try again.');
     }
-  }, [getCartId, userId, vendorId, user?.data?.contact_number,paymentValue,triggerKey]);
+  }, [getCartId, userId, vendorId, user?.data?.contact_number, paymentValue, triggerKey]);
 
 
   useEffect(() => {
     if (getCartId) {
       fetchCartAndDeliveryCharge();
     }
-  }, [triggerKey,getCartId, userId, vendorId, user?.data?.contact_number, fetchCartAndDeliveryCharge]);
+  }, [triggerKey, getCartId, userId, vendorId, user?.data?.contact_number, fetchCartAndDeliveryCharge]);
 
   const handleSelectAddress = async (id: any) => {
     try {
@@ -312,7 +314,7 @@ export default function CartSummary({ totalAmount,triggerKey  }: any) {
       postDtdcCharge();
     }
   }, [dtdcSelectValue, paymentValue]);
-  
+
 
   // getAllCouponsData
   const getAllCouponsData: any = useQuery({
@@ -463,7 +465,7 @@ export default function CartSummary({ totalAmount,triggerKey  }: any) {
                           ? Number(getPaymentDeliveryPartnerData?.data?.data?.[0]?.own_cod_delivery_charge || 0)
                           : Number(getPaymentDeliveryPartnerData?.data?.data?.[0]?.own_delivery_charge || 0);
 
-                      const finalTotal = (baseAmount + deliveryCharge - discount)-getAppliedCouponData?.data?.data?.applied_coupons[0]?.discount;
+                      const finalTotal = (baseAmount + deliveryCharge - discount) - getAppliedCouponData?.data?.data?.applied_coupons[0]?.discount;
 
                       return formatPrice(finalTotal > 0 ? finalTotal : 0);
                     })()}
@@ -524,7 +526,7 @@ export default function CartSummary({ totalAmount,triggerKey  }: any) {
                   Applied Coupon: {getAppliedCouponData?.data?.data?.data?.[0]?.code || "—"}
                 </p>
                 <p className="text-sm text-red-700 font-bold">
-                  Discount Amount: 
+                  Discount Amount:
                   {formatPrice(
                     isNaN(Number(getAppliedCouponData?.data?.data?.applied_coupons?.[0]?.discount))
                       ? 0

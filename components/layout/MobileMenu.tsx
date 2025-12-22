@@ -2,20 +2,34 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Sheet,
-  SheetContent, 
+  SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
   SheetClose
 } from '@/components/ui/sheet';
+import { usePathname, useRouter } from 'next/navigation';
+import { useUser } from '@/context/UserContext';
 
 export default function MobileMenu() {
   const [open, setOpen] = useState(false);
-  
+  const pathname = usePathname(); // 👈 ADD
+  const { user }: any = useUser();
+  const isLoggedIn = Boolean(user?.data?.id);
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/auth/login');
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -27,7 +41,7 @@ export default function MobileMenu() {
         <SheetHeader>
           <SheetTitle className="text-left">
             <span className="text-xl font-bold">
-              <span className="text-[#B69339]">Shany </span> 
+              <span className="text-[#B69339]">Shany </span>
               <span className="text-[#B69339]">Fashion</span>
             </span>
           </SheetTitle>
@@ -39,18 +53,38 @@ export default function MobileMenu() {
           <MobileLink href="/about" setOpen={setOpen}>About Us</MobileLink>
           <MobileLink href="/contact" setOpen={setOpen}>Contact</MobileLink>
           <MobileLink href="/blog" setOpen={setOpen}>Blog</MobileLink>
+
+          {isLoggedIn && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleLogout()}
+              className="
+      flex items-center gap-2
+      text-white
+      bg-red-600
+      hover:bg-red-500 hover:text-white
+      transition-all duration-200
+      px-3 py-2
+      rounded-md
+    "
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </Button>
+          )}
         </nav>
       </SheetContent>
     </Sheet>
   );
 }
 
-function MobileLink({ 
-  href, 
-  children, 
-  setOpen 
-}: { 
-  href: string; 
+function MobileLink({
+  href,
+  children,
+  setOpen
+}: {
+  href: string;
   children: React.ReactNode;
   setOpen: (open: boolean) => void;
 }) {

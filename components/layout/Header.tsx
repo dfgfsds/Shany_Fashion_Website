@@ -38,71 +38,79 @@ export default function Header() {
   return (
     <>
       {/* HEADER */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md transition-all border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          {/* Left Section - Logo & Nav */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center mr-6">
-              <Image
-                src={logo}
-                height={100}
-                width={100}
-                alt="Shany Fashion logo"
-              />
-            </Link>
+      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="h-16 flex items-center justify-between">
 
-            <nav className="hidden md:flex items-center space-x-6">
-              {[
-                { href: '/', label: 'Home' },
-                { href: '/products', label: 'Shop' },
-                { href: '/categories', label: 'Categories' },
-                { href: '/about', label: 'About Us' },
-                { href: '/blog', label: 'Blogs' },
-                { href: '/contact', label: 'Contact' },
-              ].map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`text-sm font-medium transition-colors ${pathname === href ||
-                    (pathname.startsWith(href) && href !== '/')
-                    ? 'text-[#B69339] font-semibold'
-                    : 'hover:text-[#A37F30]'
-                    }`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+            {/* LEFT : LOGO + NAV */}
+            <div className="flex items-center gap-10">
+              <Link href="/" className="flex items-center">
+                <Image
+                  src={logo}
+                  height={80}
+                  width={80}
+                  alt="Shany Fashion logo"
+                  className="object-contain"
+                />
+              </Link>
 
-          {/* Right Section - Icons */}
-          <div className="flex items-center space-x-4">
-            {/* Cart Icon */}
-            <Link
-              href={getUserId ? `/cart` : '/auth/login'}
-              className={`text-sm font-medium transition-colors ${pathname === '/cart'
-                ? 'text-[#B69339] font-semibold'
-                : 'hover:text-[#A37F30]'
-                }`}
-            >
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingBag className="h-5 w-40" />
-                {cartItem?.data?.length ? (
-                  <span className="absolute -top-1 -right-1 bg-[#B69339] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartItem?.data?.length}
-                  </span>
-                ) : null}
-              </Button>
-            </Link>
+              <nav className="hidden md:flex items-center gap-6">
+                {[
+                  { href: '/', label: 'Home' },
+                  { href: '/products', label: 'Shop' },
+                  { href: '/categories', label: 'Categories' },
+                  { href: '/about', label: 'About Us' },
+                  { href: '/blog', label: 'Blogs' },
+                  { href: '/contact', label: 'Contact' },
+                ].map(({ href, label }) => {
+                  const isActive =
+                    pathname === href ||
+                    (href !== '/' && pathname.startsWith(href));
 
-            {/* User Section */}
-            <div className="flex items-center gap-2">
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`
+                  text-sm font-medium transition-colors
+                  ${isActive
+                          ? 'text-[#B69339] font-semibold'
+                          : 'text-gray-700 hover:text-[#A37F30]'
+                        }
+                `}
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* RIGHT : CART + USER */}
+            <div className="flex items-center gap-4">
+
+              {/* CART */}
+              <Link href={getUserId ? '/cart' : '/auth/login'}>
+                <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartItem?.data?.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[#B69339] text-white text-xs h-5 w-5 rounded-full flex items-center justify-center">
+                      {cartItem.data.length}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+
+              {/* USER */}
               <Link
-                href={isLoggedIn ? `/profile` : '/auth/login'}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${pathname === '/profile'
-                  ? 'text-[#B69339] font-semibold'
-                  : 'hover:text-[#A37F30]'
-                  }`}
+                href={isLoggedIn ? '/profile' : '/auth/login'}
+                className={`
+             sm:flex items-center gap-2 text-sm font-medium
+            ${pathname === '/profile'
+                    ? 'text-[#B69339] font-semibold'
+                    : 'text-gray-700 hover:text-[#A37F30]'
+                  }
+          `}
               >
                 <Button
                   variant="ghost"
@@ -111,34 +119,38 @@ export default function Header() {
                 >
                   <User className="h-5 w-5" />
                 </Button>
-                {user?.data?.id && (
-                  <span className="text-sm">
-                    {isLoggedIn ? user?.data?.name : 'User'}
-                  </span>
-                )}
+                {isLoggedIn && <span>{user?.data?.name}</span>}
               </Link>
 
-              {/* Logout Button (only if logged in) */}
+              {/* LOGOUT */}
               {isLoggedIn && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowLogoutModal(true)}
-                  className="flex items-center gap-1 text-[#B69339] hover:text-white hover:bg-[#B69339] transition-all duration-200"
+                  className="
+              hidden lg:flex
+              items-center gap-1
+              text-[#B69339]
+              hover:bg-[#B69339] hover:text-white
+              transition-all duration-200
+            "
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
                 </Button>
               )}
-            </div>
 
-            {/* Mobile Menu */}
-            <div className="md:hidden">
-              <MobileMenu />
+              {/* MOBILE MENU */}
+              <div className="md:hidden">
+                <MobileMenu />
+              </div>
+
             </div>
           </div>
         </div>
       </header>
+
 
       {/* LOGOUT CONFIRMATION MODAL */}
       {showLogoutModal && (

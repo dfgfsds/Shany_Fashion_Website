@@ -1,11 +1,14 @@
 "use client";
 
+import { getCartItemsProductSizesWithVariantsApi } from "@/api-endpoints/CartsApi";
 import ProductGallery from "@/components/products/ProductGallery";
 import ProductInfo from "@/components/products/ProductInfo";
 import ProductTabs from "@/components/products/ProductTabs";
 import RelatedProducts from "@/components/products/RelatedProducts";
 import { useCartItem } from "@/context/CartItemContext";
 import { useProducts } from "@/context/ProductsContext";
+import { useVendor } from "@/context/VendorContext";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,7 +20,8 @@ export default function ProductPageClient({ id }: any) {
   const [getCartId, setCartId] = useState<string | null>(null);
   const [getUserName, setUserName] = useState<string | null>(null);
   const router = useRouter();
-console.log(id)
+  const { vendorId } = useVendor();
+
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
     const storedCartId = localStorage.getItem('cartId');
@@ -30,6 +34,14 @@ console.log(id)
 
 
   const productDetails = products?.data?.find((item: any) => String(item?.slug_name) === String(id));
+
+    // getCartItemsProductSizesWithVariantsApi
+  const getCartItemsProductSizesWithVariantsData: any = useQuery({
+    queryKey: ['getCartItemsProductSizesWithVariantsData', getUserId, vendorId],
+    queryFn: () => getCartItemsProductSizesWithVariantsApi(`?user_id=${getUserId}&vendor_id=${vendorId}`),
+    enabled: !!vendorId && !!getUserId
+  });
+
 
   const matchingData = cartItem?.data?.map((item: any, index: number) => {
     const product = productDetails;
@@ -64,6 +76,7 @@ console.log(id)
             <ProductGallery product={productDetails} />
             <ProductInfo product={productDetails} cartDetails={matchingData} getUserId={getUserId}
               getCartId={getCartId} getUserName={getUserName} totalQty={totalQty}
+               cartItem={getCartItemsProductSizesWithVariantsData?.data?.data?.cart_items}
             />
           </div>
 

@@ -20,24 +20,70 @@ import { useVendor } from '@/context/VendorContext';
 import { deleteCartitemsApi, updateCartitemsApi } from '@/api-endpoints/CartsApi';
 import LoginModal from '@/app/auth/LoginModal/page';
 
-export default function ProductInfo({ product, cartDetails, getUserId, getCartId, getUserName, totalQty }: any) {
+export default function ProductInfo({ product, cartDetails, getUserId, getCartId, getUserName, totalQty, cartItem }: any) {
   const queryClient = useQueryClient();
   const { vendorId } = useVendor();
   const [signInmodal, setSignInModal] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<any | null>(
-    product?.variants && product?.variants?.length > 0 ? product?.variants[0] : null
-  );
+  const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
+  const [selectedSize, setSelectedSize] = useState<any | null>(null);
+
+  const hasVariants = product?.variants?.length > 0;
+  const hasSizes = selectedVariant?.sizes?.length > 0;
+
+
+  // 🔑 FINAL BUTTON DISABLE LOGIC
+  const disableBuyButton =
+    (hasVariants && !selectedVariant) ||
+    (hasVariants && hasSizes && !selectedSize);
+
+
+  const getProductPayloadKey = () => {
+    if (selectedSize?.id) return { product_size: selectedSize?.id };
+    if (selectedVariant?.id) return { product_variant: selectedVariant?.id };
+    return { product: product?.id };
+  };
+
+  const getMatchingCartItem = () => {
+    if (!cartItem?.length) return null;
+    if (selectedSize?.id) {
+      return cartItem?.find((item: any) => item?.product_size === selectedSize?.id);
+    }
+    if (selectedVariant?.id) {
+      return cartItem?.find((item: any) => item?.product_variant === selectedVariant?.id);
+    }
+    if (!hasVariants) {
+      return cartItem?.find((item: any) => item?.product === product?.id);
+    }
+
+    return null;
+  };
+
+  const getDisplayPrice = () => {
+    if (selectedSize?.product_size_price) {
+      return selectedSize.product_size_price;
+    }
+    if (selectedVariant?.product_variant_price) {
+      return selectedVariant.product_variant_price;
+    }
+    return product?.price;
+  };
+
+
+  const matchedCartItem = getMatchingCartItem();
+  const currentQty = matchedCartItem?.quantity || 0;
+
 
   const handleAddCart = async (id: any, qty: any) => {
     const payload = {
-      product: id,
+      // product: id,
       cart: getCartId,
       user: getUserId,
       vendor: vendorId,
       quantity: qty,
       created_by: getUserName ? getUserName : 'user',
-      ...(selectedVariant?.product_variant_title ? { product_variant: selectedVariant?.id } : selectedVariant?.product_size ? { product_size: selectedVariant?.id }
-        : selectedVariant?.id ? { product: selectedVariant?.id } : ''),
+      ...getProductPayloadKey(),
+      // ...(selectedVariant?.product_variant_title ? { product_variant: selectedVariant?.id } : selectedVariant?.product_size ? { product_size: selectedVariant?.id }
+      //   : selectedVariant?.id ? { product: selectedVariant?.id } : ''),
     };
 
     try {
@@ -51,20 +97,20 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
 
   const handleUpdateCart = async (id: any, type: any, qty: any) => {
     try {
-      if (qty === 1) {
+      if (qty === 1 && type === 'decrease') {
         const updateApi = await deleteCartitemsApi(`${id}`)
         if (updateApi) {
           queryClient.invalidateQueries(['getCartitemsData'] as InvalidateQueryFilters);
         }
       } else {
-        if (!selectedVariant) {
-          const response = await updateCartitemsApi(`${id}/${type}/`)
-          if (response) {
-            queryClient.invalidateQueries(['getCartitemsData'] as InvalidateQueryFilters);
-          }
-        } else {
-          handleAddCart(id, 1)
+        // if (!selectedVariant) {
+        const response = await updateCartitemsApi(`${id}/${type}/`)
+        if (response) {
+          queryClient.invalidateQueries(['getCartitemsData'] as InvalidateQueryFilters);
         }
+        // } else {
+        //   handleAddCart(id, 1)
+        // }
       }
     } catch (error) {
 
@@ -83,7 +129,10 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
         </div>
       </div>
       <div className='flex gap-5'>
-        <div className="text-2xl font-bold text-[#B69339]">{formatPrice(product?.price)}</div>
+        {/* <div className="text-2xl font-bold text-[#B69339]">{formatPrice(product?.price)}</div> */}
+        <div className="text-2xl font-bold text-red-600">
+          {formatPrice(getDisplayPrice())}
+        </div>
         {product?.price === product?.discount || product?.discount === 0 || product?.discount === '' ?
           ('') : (
             <>
@@ -96,104 +145,189 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
 
 
       {/* <p className="text-muted-foreground">{product?.description}</p> */}
-   <div dangerouslySetInnerHTML={{ __html: product?.description }} className="quill-content" />
+      <div dangerouslySetInnerHTML={{ __html: product?.description }} className="quill-content" />
 
-      {/* {product?.variants && product?.variants?.length > 0 && (
-        <div>
-          <label className="text-sm font-medium mb-2 block">Size</label>
-          <Select 
-            value={selectedVariant?.id} 
-            onValueChange={handleVariantChange}
-          >
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Select a size" />
-            </SelectTrigger>
-            <SelectContent>
-              {product?.variants.map((variant:any) => (
-                <SelectItem key={variant.id} value={variant.id}>
-                  {variant.size} - {formatPrice(variant.price)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {product?.variants?.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-xl font-extrabold mb-3 text-gray-800">
+            Variants
+          </h2>
+
+          <div className="flex gap-4 flex-wrap">
+            {product?.variants?.
+            filter((item:any)=>item?.product_variant_status === true)
+            ?.map((variant: any) => {
+              const active = selectedVariant?.id === variant?.id;
+
+              return (
+                <div
+                  key={variant?.id}
+                  onClick={() => {
+                    setSelectedVariant(variant);
+                    setSelectedSize(null);
+                  }}
+                  className={`
+              cursor-pointer
+              w-[96px]
+              p-2
+              rounded-xl
+              border
+              text-center
+              transition-all
+              duration-200
+              ${active
+                      ? "border-red-500 bg-red-50 shadow-sm"
+                      : "border-gray-200 bg-white hover:border-gray-400 hover:shadow-sm"
+                    }
+            `}
+                >
+                  <div className="w-full h-[72px] flex items-center justify-center bg-white rounded-md mb-2">
+                    <img
+                      src={variant?.product_variant_image_urls?.[0]}
+                      alt={variant?.product_variant_title}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+
+                  <p
+                    className={`text-base font-bold capitalize truncate ${active ? "text-red-600" : "text-gray-700"
+                      }`}
+                  >
+                    {variant?.product_variant_title}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      )} */}
+      )}
+      {selectedVariant?.sizes?.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-xl font-extrabold mb-3 text-gray-800">
+            Select Size
+          </h2>
 
-      {cartDetails?.length && cartDetails[0]?.cartQty > 0 ? (
+          <div className="flex gap-3 flex-wrap">
+            {selectedVariant?.sizes
+            ?.filter((item:any)=>item?.product_size_status === true)
+            ?.map((size: any) => {
+              const active = selectedSize?.id === size?.id;
+
+              return (
+                <button
+                  key={size?.id}
+                  type="button"
+                  onClick={() => setSelectedSize(size)}
+                  className={`
+              px-4 py-2
+              rounded-full
+              text-lg
+              font-semibold
+              border
+              transition-all
+              duration-200
+              ${active
+                      ? "bg-red-500 text-white border-red-500 shadow"
+                      : "bg-white text-gray-800 border-gray-300 hover:border-red-400 hover:text-red-600"
+                    }
+            `}
+                >
+                  {size?.product_size}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {currentQty > 0 ? (
         <div>
           <label className="text-sm font-medium mb-2 block">Quantity</label>
-          <div className="flex items-center w-full md:w-[180px]">
+
+          <div className="flex items-center w-full md:w-[180px] border-2 border-white rounded-lg">
             <Button
               variant="outline"
               size="icon"
-              className="rounded-r-none h-10 w-10"
               onClick={() =>
-                handleUpdateCart(cartDetails[0]?.cartId, 'decrease', cartDetails[0]?.cartQty)
+                handleUpdateCart(matchedCartItem?.id, "decrease", currentQty)
               }
-            // disabled={quantity <= 1}
             >
-              <Minus className="h-4 w-4" />
+              <Minus />
             </Button>
 
-            <div className="text-black flex-1 h-10 border-y border-input flex items-center justify-center font-medium">
-              {totalQty ? totalQty : ''}
+            <div className="flex-1 text-center font-semibold">
+              {currentQty}
             </div>
 
             <Button
               variant="outline"
               size="icon"
-              className="rounded-l-none h-10 w-10"
-              // onClick={increaseQuantity}
-              onClick={() => handleUpdateCart(cartDetails[0]?.cartId, 'increase', '')}
-
+              onClick={() =>
+                handleUpdateCart(matchedCartItem?.id, "increase", currentQty)
+              }
             >
-              <Plus className="h-4 w-4" />
+              <Plus />
             </Button>
           </div>
         </div>
       ) : (
-        // <div className="flex flex-col md:flex-row gap-4">
-        //   <Button 
-        //     size="lg" 
-        //     className="bg-[#D9951A] hover:bg-[#3e7026] gap-2 flex-1 p-2"
-        //     onClick={(e: any) => {
-        //         e.stopPropagation();
-        //       if (getUserId) {
-        //         handleAddCart(product?.id, 1);
-        //       } else {
-        //         setSignInModal(true);
-        //       }
-        //     }}
-        //   >
-        //     <ShoppingBag className="h-5 w-5" />
-        //     Add to Cart
-        //   </Button>
-        // </div>
-
-        <button className="cursor-pointer relative px-6 py-3 bg-red-400 hover:bg-red-500 text-white font-semibold rounded-full overflow-hidden group"
-          disabled={product?.stock_quantity === 0 || product?.status === false}
+        <button
+          disabled={disableBuyButton || product?.stock_quantity === 0}
+          className={`
+    relative
+    mt-8
+    w-full
+    flex items-center justify-center gap-2
+    px-6 py-3
+    rounded-full
+    font-semibold
+    overflow-hidden
+    transition-all
+    duration-300 
+    ${disableBuyButton
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-[#B69339] hover:bg-[#A37F30] text-white shadow-md"
+            }
+  `}
           onClick={(e) => {
             e.stopPropagation();
-            if (getUserId) {
-              handleAddCart(product.id, 1);
-              //   handleAddCartAnalytics(product)
-              // });
-            } else {
+            if (!getUserId) {
               setSignInModal(true);
+              return;
             }
+            handleAddCart(
+              selectedSize?.id ||
+              selectedVariant?.id ||
+              product?.id,
+              1
+            );
           }}
         >
-          <span className="relative z-10">
-            {product?.stock_quantity === 0 || product?.status === false ? 'Out of Stock' : (
-              <div className='gap-2 flex p-2'>
-                <ShoppingBag className="h-5 w-5" />
-                <div> Add to Cart</div>
-
-              </div>
-            )}
+          {/* CONTENT */}
+          <span className="relative z-10 flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5" />
+            Add to Cart
           </span>
-          <span className="absolute inset-0 w-1/3 bg-gradient-to-l from-white to-transparent opacity-40 transform skew-x-[-40deg] shine-animation"></span>
+
+          {/* ✨ SHINE ANIMATION (ONLY WHEN ENABLED) */}
+          {!disableBuyButton && (
+            <span
+              className="
+        absolute
+        inset-0
+        w-1/3
+        bg-gradient-to-l
+        from-white/60
+        to-transparent
+        opacity-40
+        skew-x-[-30deg]
+        animate-shine
+      "
+            />
+          )}
         </button>
+
+
       )}
 
 
