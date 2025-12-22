@@ -11,7 +11,9 @@ import { useProducts } from '@/context/ProductsContext';
 import { useQuery } from '@tanstack/react-query';
 import { getSizesApi, getVariantsProductApi } from '@/api-endpoints/products';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getCartItemsProductSizesWithVariantsApi } from '@/api-endpoints/CartsApi';
+import { useVendor } from '@/context/VendorContext';
 
 
 export default function CartPage() {
@@ -20,6 +22,13 @@ export default function CartPage() {
   const { products }: any = useProducts();
   const router = useRouter();
   const [triggerKey, setTriggerKey] = useState(0); // 🔑 Key to trigger refresh
+  const [userId, setUserId] = useState<string | null>(null);
+  const { vendorId } = useVendor();
+
+  useEffect(() => {
+    const storedId = localStorage.getItem('userId');
+    setUserId(storedId);
+  }, []);
 
   const handleRefreshTrigger = () => {
     setTriggerKey((prev) => prev + 1); // 🔄 Every update/remove increases key
@@ -34,6 +43,13 @@ export default function CartPage() {
     queryKey: ['getSizesData'],
     queryFn: () => getSizesApi(``),
   });
+
+  const getCartItemsProductSizesWithVariantsData: any = useQuery({
+    queryKey: ['getCartItemsProductSizesWithVariantsData', userId, vendorId],
+    queryFn: () => getCartItemsProductSizesWithVariantsApi(`?user_id=${userId}&vendor_id=${vendorId}`),
+    enabled: !!vendorId && !!userId
+  });
+
 
   const matchingProductsArray = cartItem?.data?.map((item: any, index: number) => {
     const matchingProduct = products?.data?.find((product: any) => product.id === item.product);
@@ -107,7 +123,7 @@ export default function CartPage() {
                   </div>
 
                   <div className="space-y-6">
-                    {[...matchingProductsArray || []]
+                    {[...getCartItemsProductSizesWithVariantsData?.data?.data?.cart_items || []]
                       ?.map((item: any) => ({
                         ...item,
                         sortName: (item?.name || "").toLowerCase(),
