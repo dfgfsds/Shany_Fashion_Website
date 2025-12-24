@@ -117,6 +117,27 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
     }
   }
 
+
+  const isButtonDisabled =
+    disableBuyButton ||
+    product?.stock_quantity === 0 ||
+    product?.status === false ||
+    selectedVariant?.product_variant_status === false ||
+    selectedVariant?.product_variant_stock_quantity === 0 ||
+    selectedSize?.product_size_status === false ||
+    selectedSize?.product_size_stock_quantity === 0;
+
+  const getButtonText = () => {
+    if (product?.status === false) return "Not Available";
+    if (product?.stock_quantity === 0) return "Out of Stock";
+    if (selectedVariant && selectedVariant?.product_variant_status === false)
+      return "Variant Not Available";
+    if (selectedSize && selectedSize?.product_size_status === false)
+      return "Size Not Available";
+    if (disableBuyButton) return "Select Variant / Size";
+    return "Add to Cart";
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -155,18 +176,18 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
 
           <div className="flex gap-4 flex-wrap">
             {product?.variants?.
-            filter((item:any)=>item?.product_variant_status === true)
-            ?.map((variant: any) => {
-              const active = selectedVariant?.id === variant?.id;
+              filter((item: any) => item?.product_variant_status === true)
+              ?.map((variant: any) => {
+                const active = selectedVariant?.id === variant?.id;
 
-              return (
-                <div
-                  key={variant?.id}
-                  onClick={() => {
-                    setSelectedVariant(variant);
-                    setSelectedSize(null);
-                  }}
-                  className={`
+                return (
+                  <div
+                    key={variant?.id}
+                    onClick={() => {
+                      setSelectedVariant(variant);
+                      setSelectedSize(null);
+                    }}
+                    className={`
               cursor-pointer
               w-[96px]
               p-2
@@ -176,28 +197,28 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
               transition-all
               duration-200
               ${active
-                      ? "border-red-500 bg-red-50 shadow-sm"
-                      : "border-gray-200 bg-white hover:border-gray-400 hover:shadow-sm"
-                    }
+                        ? "border-red-500 bg-red-50 shadow-sm"
+                        : "border-gray-200 bg-white hover:border-gray-400 hover:shadow-sm"
+                      }
             `}
-                >
-                  <div className="w-full h-[72px] flex items-center justify-center bg-white rounded-md mb-2">
-                    <img
-                      src={variant?.product_variant_image_urls?.[0]}
-                      alt={variant?.product_variant_title}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-
-                  <p
-                    className={`text-base font-bold capitalize truncate ${active ? "text-red-600" : "text-gray-700"
-                      }`}
                   >
-                    {variant?.product_variant_title}
-                  </p>
-                </div>
-              );
-            })}
+                    <div className="w-full h-[72px] flex items-center justify-center bg-white rounded-md mb-2">
+                      <img
+                        src={variant?.product_variant_image_urls?.[0]}
+                        alt={variant?.product_variant_title}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+
+                    <p
+                      className={`text-base font-bold capitalize truncate ${active ? "text-red-600" : "text-gray-700"
+                        }`}
+                    >
+                      {variant?.product_variant_title}
+                    </p>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
@@ -209,16 +230,16 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
 
           <div className="flex gap-3 flex-wrap">
             {selectedVariant?.sizes
-            ?.filter((item:any)=>item?.product_size_status === true)
-            ?.map((size: any) => {
-              const active = selectedSize?.id === size?.id;
+              ?.filter((item: any) => item?.product_size_status === true)
+              ?.map((size: any) => {
+                const active = selectedSize?.id === size?.id;
 
-              return (
-                <button
-                  key={size?.id}
-                  type="button"
-                  onClick={() => setSelectedSize(size)}
-                  className={`
+                return (
+                  <button
+                    key={size?.id}
+                    type="button"
+                    onClick={() => setSelectedSize(size)}
+                    className={`
               px-4 py-2
               rounded-full
               text-lg
@@ -227,15 +248,15 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
               transition-all
               duration-200
               ${active
-                      ? "bg-red-500 text-white border-red-500 shadow"
-                      : "bg-white text-gray-800 border-gray-300 hover:border-red-400 hover:text-red-600"
-                    }
+                        ? "bg-red-500 text-white border-red-500 shadow"
+                        : "bg-white text-gray-800 border-gray-300 hover:border-red-400 hover:text-red-600"
+                      }
             `}
-                >
-                  {size?.product_size}
-                </button>
-              );
-            })}
+                  >
+                    {size?.product_size}
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}
@@ -272,7 +293,7 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
         </div>
       ) : (
         <button
-          disabled={disableBuyButton || product?.stock_quantity === 0}
+          disabled={isButtonDisabled}
           className={`
     relative
     mt-8
@@ -283,18 +304,21 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
     font-semibold
     overflow-hidden
     transition-all
-    duration-300 
-    ${disableBuyButton
+    duration-300
+    ${isButtonDisabled
               ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-[#B69339] hover:bg-[#A37F30] text-white shadow-md"
+              : "bg-red-500 hover:bg-red-600 text-white shadow-md"
             }
   `}
           onClick={(e) => {
             e.stopPropagation();
+            if (isButtonDisabled) return;
+
             if (!getUserId) {
               setSignInModal(true);
               return;
             }
+
             handleAddCart(
               selectedSize?.id ||
               selectedVariant?.id ||
@@ -303,14 +327,13 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
             );
           }}
         >
-          {/* CONTENT */}
+
           <span className="relative z-10 flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5" />
-            Add to Cart
+            {!isButtonDisabled && <ShoppingBag className="h-5 w-5" />}
+            {getButtonText()}
           </span>
 
-          {/* ✨ SHINE ANIMATION (ONLY WHEN ENABLED) */}
-          {!disableBuyButton && (
+          {!isButtonDisabled && (
             <span
               className="
         absolute
@@ -329,21 +352,6 @@ export default function ProductInfo({ product, cartDetails, getUserId, getCartId
 
 
       )}
-
-
-      {/* <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-        {[
-          { label: 'Free Shipping', detail: 'On orders over ₹999' },
-          { label: 'Secure Payment', detail: 'Safe & encrypted' },
-          { label: 'Free Returns', detail: 'Within 7 days' },
-          { label: 'Satisfaction Guaranteed', detail: '100% satisfaction' },
-        ].map((item) => (
-          <div key={item.label} className="flex flex-col">
-            <span className="font-medium">{item.label}</span>
-            <span className="text-sm text-muted-foreground">{item.detail}</span>
-          </div>
-        ))}
-      </div> */}
 
       {signInmodal && (
         <LoginModal open={signInmodal} handleClose={() => setSignInModal(false)} vendorId={vendorId} />
