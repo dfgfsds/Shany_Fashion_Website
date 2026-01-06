@@ -12,7 +12,7 @@ export const getProductcategoriesApi= async (query: any) => {
   // PRODUCTS APIS 
 export const getProductApi= async (query: any) => {
   return axios.get(
-    `${ApiUrls.product}${query}`
+    `${ApiUrls.AllProductWithVariantSize}${query}`
   );
 };
 
